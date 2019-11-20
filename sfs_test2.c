@@ -1,5 +1,5 @@
-/* sfs_test.c 
- * 
+/* sfs_test.c
+ *
  * Written by Robert Vincent for Programming Assignment #1.
  */
 #include <stdio.h>
@@ -18,7 +18,7 @@
  * do not _require_ that you support this many files. This is just to
  * test the behavior of your code.
  */
-#define MAX_FD 100 
+#define MAX_FD 100
 
 /* The maximum number of bytes we'll try to write to a file. If you
  * support much shorter or larger files for some reason, feel free to
@@ -37,12 +37,12 @@ static char test_str[] = "The quick brown fox jumps over the lazy dog.\n";
  * each 'x' is a random upper-case letter (A-Z). Feel free to modify
  * this function if your implementation requires shorter filenames, or
  * supports longer or different file name conventions.
- * 
+ *
  * The return value is a pointer to the new string, which may be
  * released by a call to free() when you are done using the string.
  */
- 
-char *rand_name() 
+
+char *rand_name()
 {
   char fname[MAX_FNAME_LENGTH];
   int i;
@@ -181,8 +181,8 @@ main(int argc, char **argv)
 
   fds[1] = sfs_fopen(names[1]);
   
-  sfs_fseek(0, 0);
-  sfs_fseek(1, 0);
+  sfs_frseek(0, 0);
+  sfs_frseek(1, 0);
   
   for (i = 0; i < 2; i++) {
     for (j = 0; j < filesize[i]; j += chunksize) {
@@ -282,7 +282,7 @@ main(int argc, char **argv)
   /* Now test the file contents.
    */
   for (i = 0; i < nopen; i++) {
-      sfs_fseek(fds[i], 0);
+      sfs_frseek(fds[i], 0);
   }
 
   for (j = 0; j < strlen(test_str); j++) {
@@ -317,7 +317,7 @@ main(int argc, char **argv)
 
   for (i = 0; i < nopen; i++) {
     fds[i] = sfs_fopen(names[i]);
-    sfs_fseek(fds[i], 0);
+    sfs_frseek(fds[i], 0);
     if (fds[i] >= 0) {
       readsize = sfs_fread(fds[i], fixedbuf, sizeof(fixedbuf));
       if (readsize != strlen(test_str)) {
@@ -385,13 +385,13 @@ main(int argc, char **argv)
 	  }
 	  max++;
   }
- 
+
   /* Now, having filled up the disk, try one more time to read the
    * contents of the files we created.
    */
   for (i = 0; i < nopen; i++) {
     fds[i] = sfs_fopen(names[i]);
-    sfs_fseek(fds[i], 0);
+    sfs_frseek(fds[i], 0);
     if (fds[i] >= 0) {
       readsize = sfs_fread(fds[i], fixedbuf, sizeof(fixedbuf));
       if (readsize < strlen(test_str)) {
