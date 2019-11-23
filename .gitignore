@@ -1,2 +1,5 @@
 *.o
 braedon_mcdonald_sfs
+.ycm_extra_conf.py
+.vscode
+emulated_disk
