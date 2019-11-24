@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-typedef struct {
+typedef struct SUPER_BLOCK {
     int magic_number;
     int block_size;
     int fs_size;
@@ -12,7 +12,7 @@ typedef struct {
 } SUPER_BLOCK;
 
 // padded to 128 bytes
-typedef struct {
+typedef struct INODE {
     int valid;
     int mode; /* not used */
     int link_count;
