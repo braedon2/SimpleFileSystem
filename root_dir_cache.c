@@ -40,7 +40,7 @@ int rdc_insert(DIR_ENTRY dir_entry)
     return 0;
 }
 
-int rdc_remove(DIR_ENTRY dir_entry)
+int rdc_remove(char *filename)
 {
     RDC_NODE *prev_node = NULL;
     RDC_NODE *cur_node = head;
@@ -49,8 +49,7 @@ int rdc_remove(DIR_ENTRY dir_entry)
     // search for dir entry
     while (cur_node != NULL && !found)
     {
-        if (strcmp(cur_node->data.filename, dir_entry.filename) &&
-            cur_node->data.inode_num == dir_entry.inode_num)
+        if (strcmp(cur_node->data.filename, filename) == 0)
         {
             found = 1;
         }
@@ -84,4 +83,20 @@ int rdc_remove(DIR_ENTRY dir_entry)
     
     free(cur_node);
     return 0;
+}
+
+int rdc_get_inode_num(char *filename)
+{
+    int inode_num = -1;
+    RDC_NODE *cur_node = head;
+    
+    while (cur_node != NULL)
+    {
+        if (strcmp(cur_node->data.filename, filename) == 0)
+        {
+            inode_num = cur_node->data.inode_num;
+        }
+        cur_node = cur_node->next;
+    }
+    return inode_num;
 }
