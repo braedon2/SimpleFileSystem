@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
 #define BLOCK_SIZE 1024
 #define NUM_BLOCKS 8258 // 1 super block
@@ -162,6 +163,19 @@ int sfs_fopen(char *name)
 {
     int inode_num = rdc_get_inode_num(name);
 
+    // check that file isn't already open
+    int file_already_open = 0;
+    for (int i = 0; i < MAX_OPEN_FILES; i++)
+    {
+        if (open_file_descriptor_table[i].inode_num == inode_num)
+            file_already_open = 1;
+    }
+    if (file_already_open)
+    {
+        printf("file already open\n");
+        return -1;
+    }
+
     // create new file if it doesn't exist
     if (inode_num < 0)
     {
@@ -241,26 +255,149 @@ int sfs_fopen(char *name)
 
 int sfs_fclose(int fileID)
 {
-    return 1;
+    int retval = 0;
+
+    if (!open_file_descriptor_table[fileID].valid)
+    {
+        printf("attempt to close unopened file\n");
+        retval = 1;
+    }
+    else
+    {
+        open_file_descriptor_table[fileID].valid = 0;
+    }
+    return retval;
 }
 
 int sfs_frseek(int fileID, int loc)
 {
+    if (!open_file_descriptor_table[fileID].valid)
+    {
+        printf("file id %d does not refer to an open file\n", fileID);
+        return 0;
+    }
+
+    INODE inode = inode_table_cache[open_file_descriptor_table[fileID].inode_num];
+
+    if (loc > inode.size)
+    {
+        printf("attempt to seek out of bounds\n");
+        return 0;
+    }
+
+    open_file_descriptor_table[fileID].rptr = loc;
     return 1;
 }
 
 int sfs_fwseek(int fileID, int loc)
 {
+    if (!open_file_descriptor_table[fileID].valid)
+    {
+        printf("file id %d does not refer to an open file\n", fileID);
+        return 0;
+    }
+
+    INODE inode = inode_table_cache[open_file_descriptor_table[fileID].inode_num];
+
+    if (loc > inode.size)
+    {
+        printf("attempt to seek out of bounds\n");
+        return 0;
+    }
+
+    open_file_descriptor_table[fileID].wptr = loc;
     return 1;
 }
 
+// returns the amount of bytes written
 int sfs_fwrite(int fileID, char *buf, int length)
 {
-    return 1;
+    int bytes_written = 0;
+    int bytes_left = length;
+    OPEN_FILE_DESCRIPTOR_TABLE_ENTRY* fde_ptr = &(open_file_descriptor_table[fileID]);
+    INODE *inode_ptr = &(inode_table_cache[fde_ptr->inode_num]);
+
+    if (!fde_ptr->valid)
+    {
+        printf("file not open\n");
+        return 0;
+    }
+
+    int start_block_index = fde_ptr->wptr / BLOCK_SIZE;
+    int start_block_pos = fde_ptr->wptr % BLOCK_SIZE;
+    int blocks_needed = length / BLOCK_SIZE;
+    blocks_needed += (length % BLOCK_SIZE) ? 1 : 0;
+    blocks_needed += (((length % BLOCK_SIZE) + start_block_pos) > BLOCK_SIZE) ? 1 : 0;
+    int current_block_address;
+    
+    for (int i = start_block_index; i < start_block_index + blocks_needed; i++)
+    {
+        if (i == (inode_ptr->size / BLOCK_SIZE) && !allocate_blocks_to_inode(inode_ptr, 1))
+        {
+            break;
+        }
+
+        current_block_address = inode_block_pointer_index_to_address(*inode_ptr, i);
+
+        char *block_buf = (char*) malloc(BLOCK_SIZE);
+        read_blocks(current_block_address, 1, block_buf);
+
+        int bytes_to_cpy;
+
+        if (i == start_block_index)
+        {
+            bytes_to_cpy = fmin(BLOCK_SIZE - start_block_pos, bytes_left);
+            memcpy(block_buf + start_block_pos, buf, bytes_to_cpy);
+        }
+        else
+        {
+            bytes_to_cpy = fmin(BLOCK_SIZE, bytes_left);
+            memcpy(block_buf, buf + bytes_written, bytes_to_cpy);
+        }
+        bytes_written += bytes_to_cpy;
+        bytes_left = length - bytes_written;
+        
+        write_blocks(current_block_address, 1, block_buf);
+        free(block_buf);
+
+        fde_ptr->wptr += bytes_to_cpy;
+        if ((inode_ptr->size < fde_ptr->wptr) > 0)
+        {
+            inode_ptr->size = fde_ptr->wptr;
+        }
+    }
+
+    // update caches
+    write_blocks(1, INODE_TABLE_LENGTH, inode_table_cache);
+    
+    return bytes_written;
 }
 
 int sfs_fread(int fileID, char *buf, int length)
 {
+    OPEN_FILE_DESCRIPTOR_TABLE_ENTRY fd_buf = open_file_descriptor_table[fileID];
+    INODE inode_buf = inode_table_cache[fd_buf.inode_num];
+
+    if (!fd_buf.valid)
+    {
+        printf("file not open\n");
+        return 0;
+    }
+
+    if (fd_buf.rptr + length > inode_buf.size)
+    {
+        printf("attempt to read our of bounds\n");
+        return 0;
+    }
+
+    int start_block_index = fd_buf.rptr / BLOCK_SIZE;
+    int start_block_address = inode_block_pointer_index_to_address(inode_buf, start_block_index);
+    int pos = fd_buf.rptr % BLOCK_SIZE;
+    int blocks_needed = (pos + length) / BLOCK_SIZE;
+    
+  
+
+    open_file_descriptor_table[fileID].wptr += length;
     return 1;
 }
 
