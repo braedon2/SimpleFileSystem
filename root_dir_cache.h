@@ -1,6 +1,7 @@
 
+// 32 dir entries per block
 typedef struct DIR_ENTRY{
-    char *filename;
+    char filename[28];
     int inode_num;
 } DIR_ENTRY;
 
