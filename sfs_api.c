@@ -14,10 +14,6 @@
 #define ROOT_DIR_INODE_NUM 0
 #define MAX_OPEN_FILES 100
 
-int fm_is_available(int blocks_requested);
-void init_open_file_descriptor_table();
-int fm_get_next_address_and_allocate();
-int get_next_fd();
 
 typedef struct SUPER_BLOCK {
     int magic_number;
@@ -56,6 +52,14 @@ typedef struct OPEN_FILE_DESCRIPTOR_TABLE_ENTRY {
 } OPEN_FILE_DESCRIPTOR_TABLE_ENTRY;
 
 OPEN_FILE_DESCRIPTOR_TABLE_ENTRY open_file_descriptor_table[MAX_OPEN_FILES];
+
+/* prototypes */
+int fm_is_available(int blocks_requested);
+int fm_get_next_address_and_allocate();
+void init_open_file_descriptor_table();
+int get_next_fd();
+int allocate_blocks_to_inode(INODE *inode, int num_blocks);
+int inode_block_pointer_index_to_address(INODE inode, int index);
 
 void mksfs(int fresh) 
 {
@@ -166,41 +170,11 @@ int sfs_fopen(char *name)
         // check if need to allocate new block in dir table
         if ((root_inode_buf.size % BLOCK_SIZE) == 0)
         {
-            // will need two blocks if the indirect pointer isn't set
-            int blocks_required = (root_inode_buf.size / BLOCK_SIZE == 12) ? 2 : 1;
-            // check if there's enough disk space to allocate new blocks
-            if (fm_is_available(blocks_required))
+            // allocate a block to the root inode and make sure there was
+            // enough space to do so
+            if (!allocate_blocks_to_inode(&root_inode_buf, 1))
             {
-                int inode_block_pointer_index = root_inode_buf.size / BLOCK_SIZE;
-
-                // allocate new block
-                int new_block_address = fm_get_next_address_and_allocate();
-
-                // allocate indirect pointer block if necessary
-                if (inode_block_pointer_index == 12)
-                {
-                    root_inode_buf.ind_ptr = fm_get_next_address_and_allocate();
-                }
-                
-                // set new block pointer in root inode
-                if (inode_block_pointer_index < 12)
-                {
-                    root_inode_buf.direct_ptr[inode_block_pointer_index] = new_block_address;
-                }
-                else if (inode_block_pointer_index >= 12) // set in indirect pointer table
-                {
-                    // read indirect block
-                    int indirect_block_buf[256]; // holds 256 direct addresses
-                    read_blocks(root_inode_buf.ind_ptr, 1, indirect_block_buf);
-                    
-                    // set direct pointer in indirect block and write it to disk
-                    indirect_block_buf[inode_block_pointer_index - 12] = new_block_address;
-                    write_blocks(root_inode_buf.ind_ptr, 1, indirect_block_buf);
-                }
-            }
-            else
-            {
-                printf("insufficient space to open file\n");
+                printf("insufficient space to create file\n");
                 return -1;
             }
         }
@@ -216,7 +190,7 @@ int sfs_fopen(char *name)
         }
         if (inode_num < 0)
         {
-            printf("insufficient inodes\n");
+            printf("insufficient inodes to create file\n");
             return -1;
         }
         inode_table_cache[inode_num].valid = 1;
@@ -233,19 +207,8 @@ int sfs_fopen(char *name)
         int dir_table_index = root_inode_buf.size / sizeof(DIR_ENTRY);
         int block_index = dir_table_index / 32; // block to get from inode
                                                 // 32 dir entries per block
-        int block_address;
-        // get block address from inode
-        if (block_index < 12) // direct pointer
-        {
-            block_address = root_inode_buf.direct_ptr[block_index];
-        }
-        else
-        {
-            // read indirect block
-            int indirect_block[256];
-            read_blocks(root_inode_buf.ind_ptr, 1, indirect_block);
-            block_address = indirect_block[block_index - 12];
-        }
+        int block_address = inode_block_pointer_index_to_address(root_inode_buf, block_index);
+
         // read dir table section to be written to
         read_blocks(block_address, 1, dir_table_section);
         // set dir table entry to the newly created directory entry
@@ -382,4 +345,79 @@ int get_next_fd()
     }
 
     return next_fd;
+}
+
+// return 0 if no space available
+int allocate_blocks_to_inode(INODE *inode, int num_blocks)
+{
+    int blocks_required = num_blocks;
+    // number of blocks currently used by inode
+    int current_blocks = inode->size / BLOCK_SIZE;
+
+    // check that the number of allocated blocks won't exceed what an inode
+    // can refer to
+    if (current_blocks + num_blocks > (12 + 256))
+        return 0;
+
+    // account for if we need to allocate the indirect pointer block
+    if ((current_blocks <= 12) && (current_blocks + num_blocks > 12))
+        blocks_required++;
+
+    // check that the requested number of blocks are available
+    if (!fm_is_available(num_blocks))
+        return 0;
+
+    for (int i = 0; i < num_blocks; i++)
+    {
+        int inode_block_pointer_index = (inode->size / BLOCK_SIZE) + i;
+
+        // allocate new block
+        int new_block_address = fm_get_next_address_and_allocate();
+
+        // allocate indirect pointer block if necessary
+        if (inode_block_pointer_index == 12)
+        {
+            inode->ind_ptr = fm_get_next_address_and_allocate();
+        }
+        
+        // set new block pointer in inode
+        if (inode_block_pointer_index < 12)
+        {
+            inode->direct_ptr[inode_block_pointer_index] = new_block_address;
+        }
+        else if (inode_block_pointer_index >= 12) // set in indirect pointer table
+        {
+            // read indirect block
+            int indirect_block_buf[256]; // holds 256 direct addresses
+            read_blocks(inode->ind_ptr, 1, indirect_block_buf);
+            
+            // set direct pointer in indirect block and write it to disk
+            indirect_block_buf[inode_block_pointer_index - 12] = new_block_address;
+            write_blocks(inode->ind_ptr, 1, indirect_block_buf);
+        }
+    }
+
+    return 1;
+}
+
+int inode_block_pointer_index_to_address(INODE inode, int index)
+{
+    if (index > (256 + 12))
+        return -1;
+
+    int block_address;
+    // get block address from inode
+    if (index < 12) // direct pointer
+    {
+        block_address = inode.direct_ptr[index];
+    }
+    else
+    {
+        // read indirect block
+        int indirect_block[256];
+        read_blocks(inode.ind_ptr, 1, indirect_block);
+        block_address = indirect_block[index - 12];
+    }
+
+    return block_address;
 }
