@@ -29,26 +29,43 @@ int main(void)
     printf("reinitializing...\n");
     mksfs(0);
 
-    DIR_ENTRY dir_entries[10];
+    // printf("testing root directory cache...\n");
+    // DIR_ENTRY dir_entries[10];
 
-    for (int i = 0; i < 10; i++)
+    // for (int i = 0; i < 10; i++)
+    // {
+    //     strcpy(dir_entries[i].filename, rand_name());
+    //     dir_entries[i].inode_num = i+1;
+
+    //     rdc_insert(dir_entries[i]);
+    // }
+
+    // int inode_num = rdc_get_inode_num(dir_entries[3].filename);
+
+    // // remove middle entry
+    // rdc_remove(dir_entries[5].filename);
+
+    // //remove first entry
+    // rdc_remove(dir_entries[0].filename);
+
+    // //remove last entry
+    // rdc_remove(dir_entries[9].filename);
+
+    // printf(":)\n\n");
+
+    // printf("size of dir entry: %ld\n", sizeof(DIR_ENTRY));
+
+    printf("testing creating 33 files\n");
+    char *names[33];
+
+    for (int i = 0; i < 32; i++)
     {
-        dir_entries[i].filename = rand_name();
-        dir_entries[i].inode_num = i+1;
-
-        rdc_insert(dir_entries[i]);
+        names[i] = rand_name();
+        sfs_fopen(names[i]);
     }
-
-    int inode_num = rdc_get_inode_num(dir_entries[3].filename);
-
-    // remove middle entry
-    rdc_remove(dir_entries[5].filename);
-
-    //remove first entry
-    rdc_remove(dir_entries[0].filename);
-
-    //remove last entry
-    rdc_remove(dir_entries[9].filename);
+    // will go to the indirect block
+    names[32] = rand_name();
+    sfs_fopen(names[32]);
 
     printf(":)\n");
 }
