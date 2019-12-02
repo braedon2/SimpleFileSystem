@@ -2,13 +2,27 @@
 #include <stdlib.h>
 #include <string.h>
 
-typedef struct RDC_NODE {
-    DIR_ENTRY data;
-    struct RDC_NODE *next;
-} RDC_NODE;
 
+
+int size = 0;
 RDC_NODE *head = NULL;
 RDC_NODE *tail = NULL;
+RDC_NODE *cur_listing = NULL;
+
+void rdc_init()
+{
+    cur_listing = head;
+}
+
+RDC_NODE *rdc_head()
+{
+    return head;
+}
+
+int rdc_size()
+{
+    return size;
+}
 
 // TODO check for duplicates
 int rdc_insert(DIR_ENTRY dir_entry)
@@ -37,6 +51,7 @@ int rdc_insert(DIR_ENTRY dir_entry)
         tail = new_node;
     }
     
+    size++;
     return 0;
 }
 
@@ -80,12 +95,17 @@ int rdc_remove(char *filename)
     {
         prev_node->next = cur_node->next;
     }
+
+    // removing a file that is being listed will cause the listing to fail
+    if (cur_node == cur_listing)
+        cur_listing = NULL;
     
     free(cur_node);
+    size--;
     return 0;
 }
 
-int rdc_get_inode_num(char *filename)
+int rdc_get_inode_num(const char *filename)
 {
     int inode_num = -1;
     RDC_NODE *cur_node = head;
@@ -99,4 +119,18 @@ int rdc_get_inode_num(char *filename)
         cur_node = cur_node->next;
     }
     return inode_num;
+}
+
+// return 1 if succesful
+int rdc_getnextfilename(char *filename)
+{
+    if (cur_listing == NULL)
+    {
+        cur_listing = head; // reset listing
+        return 0;
+    }
+
+    strcpy(filename, cur_listing->data.filename);
+    cur_listing = cur_listing->next;
+    return 1;
 }

@@ -12,7 +12,7 @@
  * upper-case letters and periods ('.') characters. Feel free to
  * change this if your implementation differs.
  */
-#define MAX_FNAME_LENGTH 20   /* Assume at most 20 characters (16.3) */
+#define MAX_FILENAME 20   /* Assume at most 20 characters (16.3) */
 
 /* The maximum number of files to attempt to open or create.  NOTE: we
  * do not _require_ that you support this many files. This is just to
@@ -47,10 +47,10 @@ static char modified_pasta[] = "Ok boomer, you have to have a very high IQ to un
  
 char *rand_name() 
 {
-  char fname[MAX_FNAME_LENGTH];
+  char fname[MAX_FILENAME];
   int i;
 
-  for (i = 0; i < MAX_FNAME_LENGTH; i++) {
+  for (i = 0; i < MAX_FILENAME; i++) {
     if (i != 16) {
       fname[i] = 'A' + (rand() % 26);
     }

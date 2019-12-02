@@ -12,7 +12,7 @@
  * upper-case letters and periods ('.') characters. Feel free to
  * change this if your implementation differs.
  */
-#define MAX_FNAME_LENGTH 20   /* Assume at most 20 characters (16.3) */
+#define MAX_FILENAME 20   /* Assume at most 20 characters (16.3) */
 
 /* The maximum number of files to attempt to open or create.  NOTE: we
  * do not _require_ that you support this many files. This is just to
@@ -44,10 +44,10 @@ static char test_str[] = "The quick brown fox jumps over the lazy dog.\n";
 
 char *rand_name()
 {
-  char fname[MAX_FNAME_LENGTH];
+  char fname[MAX_FILENAME];
   int i;
 
-  for (i = 0; i < MAX_FNAME_LENGTH; i++) {
+  for (i = 0; i < MAX_FILENAME; i++) {
     if (i != 16) {
       fname[i] = 'A' + (rand() % 26);
     }
@@ -82,10 +82,10 @@ main(int argc, char **argv)
   /* First we open two files and attempt to write data to them.
    */
   {
-  char fname[MAX_FNAME_LENGTH+10];
+  char fname[MAX_FILENAME+10];
   int i;
 
-  for (i = 0; i < MAX_FNAME_LENGTH+10; i++) {
+  for (i = 0; i < MAX_FILENAME+10; i++) {
     if (i != 8) {
       fname[i] = 'A' + (rand() % 26);
     }
@@ -151,7 +151,7 @@ main(int argc, char **argv)
       }
       free(buffer);
     }
-    int tmp = sfs_GetFileSize(names[i]);
+    int tmp = sfs_getfilesize(names[i]);
     if (filesize[i] != tmp) {
       fprintf(stderr, "ERROR: mismatch file size %d, %d\n", filesize[i], tmp);
       error_count++;
@@ -376,11 +376,11 @@ main(int argc, char **argv)
   }
 
   printf("Directory listing\n");
-  char *filename = (char *)malloc(MAXFILENAME);
+  char *filename = (char *)malloc(MAX_FILENAME);
   int max = 0;
-  while (sfs_get_next_filename(filename)) {
+  while (sfs_getnextfilename(filename)) {
 	  if (strcmp(filename, names[max]) != 0) {
-	  	printf("ERROR misnamed file %d: %s %s\n", max, filename, names[max]);
+	  	printf("ERROR misnamed file %d: %s %s\n", max, filename, names[max]); 
 		error_count++;
 	  }
 	  max++;
@@ -419,7 +419,7 @@ main(int argc, char **argv)
 	  sfs_remove(names[i]);
   }
 
-  if (sfs_get_next_filename(filename)) {
+  if (sfs_getnextfilename(filename)) {
 	  fprintf(stderr, "ERROR: should be empty dir\n");
 	  error_count++;
   }
