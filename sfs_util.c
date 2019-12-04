@@ -7,7 +7,7 @@
 #include <string.h>
 #include <math.h>
 
-// returns 1 on success
+
 int fm_is_available(int blocks_requested)
 {
     // BLOCK_SIZE * 8 is the number of bits needed
@@ -33,7 +33,7 @@ int fm_is_available(int blocks_requested)
     return free_blocks_found == blocks_requested;
 }
 
-// return -1 if no space
+
 int fm_get_next_address_and_allocate()
 {
     int next_address = -1;
@@ -88,10 +88,11 @@ int get_next_fd()
 // return 0 if no space available
 int allocate_block_to_inode(INODE *inode)
 {
-    
+    //TODO check that the inode is full given the current number 
+    // of allocated inode
 
     // number of blocks currently used by inode
-    int current_blocks = (inode->size == 0) ? 0 : inode->size / BLOCK_SIZE + 1;
+    int current_blocks = (inode->size == 0) ? 0 : inode->size / BLOCK_SIZE;
     // need to allocate two blocks if we need to allocate the indirect pointer block
     int blocks_required = (current_blocks == 12) ? 2 : 1;
 

@@ -75,5 +75,12 @@ int sfs_fwrite(int fileID, const char *buf, int length);
  * returns the number of bytes read. returns -1 if the file id does not
  * refer to an open file
  */
-int sfs_fread(int fileID, char *buf, int length); // read characters from disk into buf
+int sfs_fread(int fileID, char *buf, int length);
+
+/**
+ * removes a file from the file system and deallocates its data blocks
+ * 
+ * returns -1 if the file does not exist
+ * returns 0 on success
+ */
 int sfs_remove(char *file); // removes a file from the filesystem

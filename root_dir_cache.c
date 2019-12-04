@@ -29,6 +29,12 @@ void rdc_init()
     head = NULL;
     tail = NULL;
 
+    // check that there is data to initialize
+    if (root_inode->size == 0)
+    {
+        return;
+    }
+
     // initalize the list with the table pointed to by the given inode
     int cur_index = 0;
     int cur_address = inode_index_to_address(*root_inode, cur_index);

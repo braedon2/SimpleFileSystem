@@ -136,7 +136,7 @@ int sfs_fopen(char *name)
         {
             // allocate a block to the root inode and make sure there was
             // enough space to do so
-            if (!allocate_blocks_to_inode(root_inode_ptr, 1))
+            if (allocate_block_to_inode(root_inode_ptr) == -1)
             {
                 printf("insufficient space to create file\n");
                 return -1;
@@ -280,7 +280,7 @@ int sfs_fwrite(int fileID, const char *buf, int length)
         if (fde_ptr->wptr % BLOCK_SIZE == 0 && fde_ptr->wptr == inode_ptr->size)
         {
             // stop writing if there's no space left on disk
-            if (!allocate_block_to_inode(inode_ptr, 1))
+            if (allocate_block_to_inode(inode_ptr) == -1)
                 break;
         }
 

@@ -25,7 +25,22 @@ void init_open_file_descriptor_table();
  */
 int get_next_fd();
 
-
+/**
+ * allocates a block and sets the given inode to point to it. the function uses
+ * the inodes size to determine what pointer to set so it should only be called 
+ * when no more data can be written with the current number of allocated blocks
+ * 
+ * returns -1 if the allocation fails
+ * returns 0 on success
+ */
 int allocate_block_to_inode(INODE *inode);
+
+/**
+ * maps an inodes block pointer to its associated disk-address. 
+ * 
+ * returns -1 if the index refers to a pointer that does not point to an 
+ * allocated block
+ * returns 0 on success
+ */
 int inode_index_to_address(INODE inode, int index);
 int is_file_open(char *file);

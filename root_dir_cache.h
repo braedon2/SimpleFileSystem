@@ -1,3 +1,9 @@
+/**
+ * api for the root directory cache
+ * 
+ * the underlying data structure is a linked list
+ */
+
 #include "common.h"
 
 /**
