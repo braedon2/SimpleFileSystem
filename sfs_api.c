@@ -168,18 +168,6 @@ int sfs_fopen(char *name)
 
         // write dir entry to dir table on disk
         rdc_to_disk();
-        // DIR_ENTRY dir_table_section[32]; // one disk block of the dir table
-        // int dir_table_index = root_inode_ptr->size / sizeof(DIR_ENTRY);
-        // int block_index = dir_table_index / 32; // block to get from inode
-        //                                         // 32 dir entries per block
-        // int block_address = inode_index_to_address(*root_inode_ptr, block_index);
-
-        // // read dir table section to be written to
-        // read_blocks(block_address, 1, dir_table_section);
-        // // set dir table entry to the newly created directory entry
-        // dir_table_section[dir_table_index % 32] = dir_entry;
-        // // write the updated section back to the disk
-        // write_blocks(block_address, 1, dir_table_section);
 
         // update size of root inode
         root_inode_ptr->size += sizeof(DIR_ENTRY);
@@ -198,6 +186,7 @@ int sfs_fopen(char *name)
     open_file_descriptor_table[fd].rptr = 0;
     open_file_descriptor_table[fd].wptr = inode_table_cache[inode_num].size;
     open_file_descriptor_table[fd].inode_num = inode_num;
+
 
     return fd;
 }

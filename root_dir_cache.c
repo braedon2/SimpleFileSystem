@@ -1,6 +1,7 @@
 #include "root_dir_cache.h"
 #include "sfs_util.h"
 #include "disk_emu.h"
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
